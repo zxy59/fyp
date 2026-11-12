@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="RCSR Demo" />
+  <title data-i18n="doc.title">RCSR · Super-Resolution</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600;9..40,700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="./assets/style.css?v=20261031a" />
+</head>
+<body>
+
+  <header class="site-header">
+    <div class="header-inner">
+      <div class="brand">
+        <div class="logo-mark">R</div>
+        <div class="logo-text">
+          <h1>RCSR</h1>
+          <p data-i18n="brand.sub">Selective image super-resolution</p>
+        </div>
+      </div>
+      <div class="header-meta">
+        <div class="model-tags lang-switch" role="group" aria-label="Language">
+          <button type="button" class="model-tag lang-btn" data-lang="zh">中文</button>
+          <button type="button" class="model-tag lang-btn active" data-lang="en">EN</button>
+        </div>
+        <div class="model-tags">
+          <span class="model-tag">Real-ESRGAN</span>
+          <span class="model-tag">OSEDiff</span>
+          <span class="model-tag model-tag-accent" data-i18n="brand.tagFused">RCSR 融合</span>
+        </div>
+        <span class="badge badge-status" data-i18n="health.connecting">Connecting…</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div class="grid-main">
+      <aside class="sidebar">
+        <div class="card sidebar-card">
+          <div class="card-title" data-i18n="upload.title">输入</div>
+          <div id="upload-zone" class="upload-zone">
+            <input type="file" id="file-input" accept="image/*" />
+            <div class="upload-icon">
+              <svg width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.8">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+              </svg>
+            </div>
+            <h3 data-i18n="upload.heading">上传图片</h3>
+            <p data-i18n="upload.hint">拖拽或点击 · JPG / PNG</p>
+          </div>
+        </div>
+
+        <div class="card sidebar-card" id="coverage-panel">
+          <div class="card-title" data-i18n="coverage.title">G 覆盖率</div>
+          <p class="panel-hint" data-i18n="coverage.hint">Router 选用 OSEDiff 的 patch 比例 · 默认 5%</p>
+          <div class="coverage-grid" role="group" data-i18n-aria="coverage.title">
+            <button type="button" class="gear-btn coverage-btn" data-coverage="0.01">1%</button>
+            <button type="button" class="gear-btn coverage-btn active" data-coverage="0.05">5%</button>
+            <button type="button" class="gear-btn coverage-btn" data-coverage="0.10">10%</button>
+          </div>
+          <p id="coverage-hint" class="panel-hint panel-hint-note" data-i18n="coverage.note">先上传推理；切换挡位会复用 D/G，只重跑融合</p>
+        </div>
+
+        <div class="card sidebar-card" id="adjust-panel">
+          <div class="card-title" data-i18n="fx.title">效果增强</div>
+          <label class="field-label" for="adjust-layer" data-i18n="fx.choose">选择图片</label>
+          <select id="adjust-layer" class="field-select" disabled>
+            <option value="" data-i18n="common.needInfer">请先完成推理</option>
+          </select>
+          <div class="adjust-preview-block">
+            <div class="adjust-preview-meta">
+              <span class="adjust-preview-label" data-i18n="fx.preview">预览</span>
+              <button type="button" id="adjust-preview-zoom" class="btn btn-ghost btn-sm" disabled data-i18n="fx.zoom">放大查看</button>
+            </div>
+            <button type="button" id="adjust-preview-open" class="adjust-preview-open" disabled data-i18n-aria="fx.zoomAria">
+              <canvas id="adjust-preview" width="280" height="200"></canvas>
+            </button>
+            <p id="adjust-preview-hint" class="adjust-preview-hint" data-i18n="common.needInfer">请先完成推理</p>
+          </div>
+          <div class="enhance-block">
+            <span class="field-label" data-i18n="fx.enhance">显示增强</span>
+            <p class="panel-hint panel-hint-inline" data-i18n="fx.enhanceHint">拖动滑块连续调整 Gamma、Contrast 与 CLAHE</p>
+            <div class="enhance-sliders">
+              <div class="slider-field" data-tip-key="tip.gamma">
+                <div class="slider-meta">
+                  <label for="enhance-gamma" data-i18n="fx.gamma">Gamma</label>
+                  <output id="enhance-gamma-val" for="enhance-gamma">1.00</output>
+                </div>
+                <input type="range" id="enhance-gamma" min="0.50" max="2.00" step="0.01" value="1.00" />
+              </div>
+              <div class="slider-field" data-tip-key="tip.contrast">
+                <div class="slider-meta">
+                  <label for="enhance-contrast" data-i18n="fx.contrast">Contrast</label>
+                  <output id="enhance-contrast-val" for="enhance-contrast">1.00</output>
+                </div>
+                <input type="range" id="enhance-contrast" min="0.50" max="1.50" step="0.01" value="1.00" />
+              </div>
+              <div class="slider-field" data-tip-key="tip.clahe">
+                <div class="slider-meta">
+                  <label for="enhance-clahe" data-i18n="fx.clahe">CLAHE</label>
+                  <output id="enhance-clahe-val" for="enhance-clahe">0.000</output>
+                </div>
+                <input type="range" id="enhance-clahe" min="0" max="1" step="0.005" value="0" />
+              </div>
+            </div>
+          </div>
+          <div class="feather-block">
+            <span class="field-label" data-i18n="fx.feather">融合边缘羽化</span>
+            <p class="panel-hint panel-hint-inline" data-i18n="fx.featherHint">软化 32px 拼接缝 · 0% 为硬拼接</p>
+            <div class="feather-grid" role="group" data-i18n-aria="fx.feather">
+              <button type="button" class="gear-btn feather-btn active" data-feather="0" data-tip-key="tip.feather0">0%</button>
+              <button type="button" class="gear-btn feather-btn" data-feather="0.25" data-tip-key="tip.feather25">25%</button>
+              <button type="button" class="gear-btn feather-btn" data-feather="0.50" data-tip-key="tip.feather50">50%</button>
+              <button type="button" class="gear-btn feather-btn" data-feather="0.75" data-tip-key="tip.feather75">75%</button>
+              <button type="button" class="gear-btn feather-btn" data-feather="1" data-tip-key="tip.feather100">100%</button>
+            </div>
+            <p id="feather-hint" class="panel-hint panel-hint-note" data-i18n="fx.featherNote">羽化只写入预览与「用户优化」对比，不改主结果卡。</p>
+          </div>
+          <div class="adjust-actions">
+            <button type="button" id="adjust-reset" class="btn btn-ghost" disabled data-i18n="fx.reset">重置</button>
+            <button type="button" id="adjust-download-raw" class="btn btn-ghost" disabled data-i18n="fx.downloadRaw">下载原图</button>
+            <button type="button" id="adjust-download" class="btn btn-primary" disabled data-i18n="fx.downloadAdj">下载调整后</button>
+          </div>
+        </div>
+      </aside>
+
+      <div class="content">
+        <div id="error-box" class="error-box" hidden></div>
+
+        <section class="panel">
+          <div class="panel-head">
+            <div>
+              <h2 class="panel-title" data-i18n="out.title">输出结果</h2>
+              <p class="panel-desc" data-i18n="out.desc">原图 · Real-ESRGAN · OSEDiff · RCSR 融合</p>
+            </div>
+            <div class="panel-actions">
+              <span id="toolbar-info" class="toolbar-info"></span>
+            </div>
+          </div>
+
+          <div id="result-grid" class="result-grid"></div>
+          <div id="latency-strip" class="latency-strip" hidden></div>
+        </section>
+
+        <section id="compare-section" class="panel compare-panel"></section>
+      </div>
+    </div>
+  </main>
+
+  <div id="lightbox" class="lightbox" hidden aria-hidden="true">
+    <div class="lightbox-backdrop" data-close></div>
+    <div class="lightbox-dialog" role="dialog" aria-modal="true" aria-labelledby="lightbox-title">
+      <div class="lightbox-toolbar">
+        <div class="lightbox-meta">
+          <h3 id="lightbox-title"></h3>
+          <p id="lightbox-sub"></p>
+        </div>
+        <div class="lightbox-actions">
+          <button type="button" class="lightbox-nav" id="lightbox-prev" aria-label="上一张">‹</button>
+          <span id="lightbox-counter" class="lightbox-counter"></span>
+          <button type="button" class="lightbox-nav" id="lightbox-next" aria-label="下一张">›</button>
+          <button type="button" class="lightbox-btn" id="lightbox-download" aria-label="下载">↓</button>
+          <button type="button" class="lightbox-close" data-close aria-label="关闭">×</button>
+        </div>
+      </div>
+      <div class="lightbox-stage">
+        <img id="lightbox-img" alt="" />
+      </div>
+    </div>
+  </div>
+
+  <div id="spot-nav-fullscreen" class="spot-nav-fullscreen" hidden aria-hidden="true">
+    <div class="spot-fs-backdrop" data-spot-fs-close></div>
+    <div class="spot-fs-dialog" role="dialog" aria-modal="true" aria-labelledby="spot-fs-title">
+      <div class="spot-fs-toolbar">
+        <div class="spot-fs-meta">
+          <h3 id="spot-fs-title" data-i18n="spot.fsTitle">放大定位</h3>
+          <p id="spot-fs-sub" data-i18n="spot.fsSub">先移动鼠标选点，在图上单击固定位置；调整倍数后点「确认位置」</p>
+        </div>
+        <div class="spot-fs-zoom">
+          <label for="spot-picker-zoom" data-i18n="spot.zoom">放大倍数</label>
+          <input type="range" id="spot-picker-zoom" min="100" max="400" step="5" value="100" />
+          <output id="spot-picker-zoom-val">100</output><span>%</span>
+        </div>
+        <button type="button" class="lightbox-close" data-spot-fs-close aria-label="关闭">×</button>
+      </div>
+      <div class="spot-fs-viewport" id="spot-nav-picker-viewport">
+        <img id="spot-nav-picker-img" alt="放大定位" draggable="false" />
+        <div class="spot-nav-reticle" id="spot-nav-picker-reticle" hidden>
+          <span class="spot-nav-cross-v"></span>
+          <span class="spot-nav-cross-h"></span>
+          <span class="spot-nav-box"></span>
+        </div>
+      </div>
+      <div class="spot-fs-actions">
+        <span class="spot-fs-hint" data-i18n="spot.fsHint">100% 与上方对比同尺度，可继续调大放大倍数</span>
+        <div class="spot-fs-btns">
+          <button type="button" id="spot-nav-picker-confirm" class="btn btn-primary" data-i18n="spot.confirm">确认位置</button>
+          <button type="button" id="spot-nav-picker-cancel" class="btn btn-ghost" data-i18n="common.cancel">取消</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div id="float-tip" class="float-tip" hidden></div>
+  <script src="./assets/app.js?v=20261031b"></script>
+</body>
+</html>
